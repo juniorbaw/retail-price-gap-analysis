@@ -1,0 +1,10 @@
+packages:
+  # Fournit accepted_range, utilise pour borner les montants et les notes.
+  # Les tests natifs de dbt (unique, not_null, accepted_values, relationships)
+  # ne couvrent pas les intervalles numeriques.
+  #
+  # Source git plutot que le hub dbt : la resolution par le hub est bloquee
+  # derriere certains proxys d'entreprise, alors que le clone git passe. La
+  # revision est epinglee pour que le build reste reproductible.
+  - git: "https://github.com/dbt-labs/dbt-utils.git"
+    revision: 1.3.0

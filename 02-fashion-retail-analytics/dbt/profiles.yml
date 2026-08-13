@@ -1,0 +1,16 @@
+# Profil DuckDB : local, sans serveur, sans identifiants.
+#
+# Ce fichier est versionne volontairement. Il ne contient AUCUN secret : DuckDB
+# ecrit dans un simple fichier local. C'est ce qui rend le projet reproductible
+# par n'importe qui avec `dbt build --profiles-dir .`, sans compte cloud.
+#
+# Pour une cible Snowflake (identifiants requis), voir profiles.yml.example :
+# les valeurs y passent par des variables d'environnement, jamais en clair.
+
+fashion_retail:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: fashion_retail.duckdb
+      threads: 4

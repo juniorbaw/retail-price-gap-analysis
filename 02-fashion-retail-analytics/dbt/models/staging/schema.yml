@@ -1,0 +1,171 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: >
+      Transactions nettoyees. GRAIN : une ligne = une transaction.
+      2 750 lignes (3 400 lignes source moins 650 sans montant).
+      C'est la seule table de fait du projet : toute metrique monetaire au
+      grain transaction se calcule ici.
+    columns:
+      - name: transaction_id
+        description: >
+          Cle primaire de substitution, generee par row_number sur un ordre
+          deterministe. La source ne fournit aucun identifiant de transaction.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: client_id
+        description: >
+          Identifiant du client, cle etrangere vers dim_clients.
+          166 valeurs distinctes.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+
+      - name: article
+        description: Libelle de l'article achete, espaces superflus retires. 50 valeurs.
+        data_tests:
+          - not_null
+
+      - name: montant_usd
+        description: >
+          Montant de la transaction en dollars. Toujours renseigne et strictement
+          positif a ce stade : les lignes sans montant sont filtrees en amont.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+
+      - name: date_achat
+        description: >
+          Date de la transaction, convertie depuis le texte JJ-MM-AAAA.
+          Plage observee : 2022-10-02 a 2023-10-01.
+        data_tests:
+          - not_null
+
+      - name: note_avis
+        description: >
+          Note de 1 a 5 laissee par le client. NULL quand aucun avis n'a ete
+          depose : l'absence d'avis n'est pas une note de zero, et le NULL est
+          conserve tel quel pour que les moyennes l'ignorent.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 5
+
+      - name: mode_paiement
+        description: Moyen de paiement, deux valeurs possibles.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Cash", "Credit Card"]
+
+  - name: dim_clients
+    description: >
+      Dimension client avec ses agregats de comportement d'achat.
+      GRAIN : une ligne = un client. 166 lignes.
+      Les colonnes ca_client et nb_transactions sont au grain CLIENT : elles ne
+      doivent jamais etre sommees depuis une table au grain transaction.
+      Voir docs/rapport_qualite_donnees.md.
+    columns:
+      - name: client_id
+        description: Identifiant du client. Cle primaire de la dimension.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: nb_transactions
+        description: Nombre de transactions du client. Grain client.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                inclusive: true
+
+      - name: ca_client
+        description: >
+          Chiffre d'affaires total du client, en dollars. Grain client.
+          La somme de cette colonne sur les 166 lignes vaut le CA global
+          (430 952 USD) : c'est ce qu'assert_coherence_ca verifie.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+
+      - name: panier_moyen_client
+        description: Montant moyen d'une transaction pour ce client.
+        data_tests:
+          - not_null
+
+      - name: panier_median_client
+        description: >
+          Montant median d'une transaction pour ce client. Moins sensible que
+          la moyenne aux achats exceptionnels.
+        data_tests:
+          - not_null
+
+      - name: montant_min_client
+        description: Plus petit montant de transaction du client.
+        data_tests:
+          - not_null
+
+      - name: montant_max_client
+        description: Plus gros montant de transaction du client.
+        data_tests:
+          - not_null
+
+      - name: date_premier_achat
+        description: Date de la premiere transaction du client.
+        data_tests:
+          - not_null
+
+      - name: date_dernier_achat
+        description: >
+          Date de la derniere transaction du client. Sert de base a une analyse
+          de recence.
+        data_tests:
+          - not_null
+
+      - name: nb_avis
+        description: >
+          Nombre d'avis deposes par le client. Peut valoir 0 : un client peut
+          acheter sans jamais noter.
+        data_tests:
+          - not_null
+
+      - name: note_moyenne_client
+        description: >
+          Note moyenne du client sur ses avis. NULL si le client n'a jamais
+          note : il n'y a pas de moyenne a calculer sur un ensemble vide.
+
+      - name: quartile_valeur
+        description: Quartile de CA du client, de 1 (plus faible) a 4 (plus eleve).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false
+
+      - name: segment_valeur
+        description: >
+          Libelle du segment de valeur, derive du quartile. Segmentation
+          RELATIVE par quartiles : chaque segment contient environ un quart des
+          clients par construction, ce n'est pas un seuil metier absolu.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["1. Occasionnel", "2. Regulier", "3. Fidele", "4. VIP"]

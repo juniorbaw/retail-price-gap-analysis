@@ -1,0 +1,46 @@
+name: "fashion_retail"
+version: "1.0.0"
+config-version: 2
+
+profile: "fashion_retail"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  fashion_retail:
+    staging:
+      # Les modeles de staging sont des vues : ils ne font que renommer, caster
+      # et filtrer. Les materialiser en table couterait du stockage pour aucun
+      # gain de calcul.
+      +materialized: view
+      +schema: staging
+    marts:
+      # Les marts sont des tables : ils agregent, sont lus souvent (BI), et on
+      # veut que le cout d'agregation soit paye une fois au build.
+      +materialized: table
+      +schema: marts
+    snowflake:
+      # Variante de syntaxe Snowflake, non executee sur la cible DuckDB.
+      +enabled: false
+
+seeds:
+  fashion_retail:
+    fashion_retail_sales:
+      +column_types:
+        Customer Reference ID: INTEGER
+        Item Purchased: VARCHAR
+        Purchase Amount (USD): DOUBLE
+        # Conserve en texte : le fichier source est en JJ-MM-AAAA, un cast
+        # automatique l'interpreterait en MM-JJ-AAAA et decalerait les dates.
+        Date Purchase: VARCHAR
+        Review Rating: DOUBLE
+        Payment Method: VARCHAR

@@ -1,0 +1,51 @@
+version: 2
+
+seeds:
+  - name: fashion_retail_sales
+    description: >
+      Source brute des transactions du retailer fashion, chargee telle quelle.
+      Le fichier est un lien symbolique vers data/raw/Fashion_Retail_Sales.csv :
+      il n'existe qu'une seule copie de la source dans le depot, et elle n'est
+      jamais modifiee. 3 400 lignes, dont 650 sans montant.
+
+      Les noms de colonnes contiennent des espaces et des parentheses : ils sont
+      declares avec quote true pour que dbt les echappe dans les tests.
+    columns:
+      - name: Customer Reference ID
+        quote: true
+        description: Identifiant du client. Present sur toutes les lignes.
+        data_tests:
+          - not_null
+
+      - name: Item Purchased
+        quote: true
+        description: Libelle de l'article achete. 50 valeurs distinctes.
+        data_tests:
+          - not_null
+
+      - name: Purchase Amount (USD)
+        quote: true
+        description: >
+          Montant de la transaction en dollars. NULL sur 650 des 3 400 lignes :
+          ces lignes sont ecartees dans stg_transactions.
+
+      - name: Date Purchase
+        quote: true
+        description: >
+          Date d'achat au format JJ-MM-AAAA (texte). Conservee en VARCHAR au
+          chargement pour empecher toute interpretation MM-JJ-AAAA.
+        data_tests:
+          - not_null
+
+      - name: Review Rating
+        quote: true
+        description: Note laissee par le client, de 1 a 5. NULL si pas d'avis.
+
+      - name: Payment Method
+        quote: true
+        description: Moyen de paiement utilise.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Cash", "Credit Card"]

@@ -19,7 +19,11 @@ __pycache__/
 .env
 .env.*
 !.env.example
-profiles.yml
+
+# Note : le profiles.yml du projet dbt est versionne volontairement. Il cible
+# DuckDB en local et ne contient aucun identifiant. Un profil warehouse
+# (Snowflake) ne doit jamais l'etre : voir dbt/profiles.yml.example, ou tout
+# passe par env_var().
 
 # dbt
 target/

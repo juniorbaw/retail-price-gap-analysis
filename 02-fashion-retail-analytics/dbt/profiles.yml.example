@@ -1,0 +1,30 @@
+# Exemple de profil multi-cibles.
+#
+# Copier en profiles.yml et adapter. Regle absolue : aucun identifiant en clair.
+# Les valeurs sensibles passent par env_var(), donc par l'environnement ou un
+# gestionnaire de secrets, jamais par le depot git.
+
+fashion_retail:
+  target: dev
+
+  outputs:
+    # Cible par defaut : DuckDB local, zero configuration.
+    dev:
+      type: duckdb
+      path: fashion_retail.duckdb
+      threads: 4
+
+    # Cible Snowflake : equivalent de production.
+    # Activer les modeles de models/snowflake/ dans dbt_project.yml avant usage.
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      # Authentification par paire de cles, preferee au mot de passe.
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'ANALYTICS') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'FASHION_RETAIL') }}"
+      threads: 8
+      client_session_keep_alive: false

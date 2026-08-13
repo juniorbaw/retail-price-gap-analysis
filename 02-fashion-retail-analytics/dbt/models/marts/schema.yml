@@ -1,0 +1,242 @@
+version: 2
+
+models:
+  - name: mart_kpi_global
+    description: >
+      Chiffres cles du projet, une seule ligne. C'est la source de verite des
+      nombres publies dans les README et le CV : aucun chiffre du portfolio ne
+      doit sortir d'ailleurs.
+    columns:
+      - name: nb_clients
+        description: Nombre de clients distincts. Compte depuis dim_clients (grain client).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [166]
+                quote: false
+
+      - name: nb_transactions
+        description: Nombre de transactions. Compte depuis stg_transactions (grain transaction).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2750]
+                quote: false
+
+      - name: ca_total_usd
+        description: >
+          Chiffre d'affaires total en dollars, somme des montants au grain
+          transaction. Valeur attendue : 430 952 USD.
+        data_tests:
+          - not_null
+
+      - name: panier_moyen_usd
+        description: >
+          Montant moyen d'une transaction. Non arrondi : le test
+          assert_kpi_arithmetique verifie que nb_transactions x panier_moyen
+          redonne ca_total, ce qu'un arrondi prematuré casserait.
+        data_tests:
+          - not_null
+
+      - name: panier_median_usd
+        description: >
+          Montant median d'une transaction. Nettement inferieur a la moyenne :
+          la distribution est asymetrique, tiree vers le haut par quelques gros
+          achats. C'est la mediane qui decrit l'achat typique.
+        data_tests:
+          - not_null
+
+      - name: montant_min_usd
+        description: Plus petite transaction observee.
+        data_tests:
+          - not_null
+
+      - name: montant_max_usd
+        description: Plus grosse transaction observee.
+        data_tests:
+          - not_null
+
+      - name: transactions_par_client
+        description: >
+          Nombre moyen de transactions par client. C'est le facteur exact par
+          lequel un fan-out client vers transaction multiplierait le CA.
+        data_tests:
+          - not_null
+
+      - name: nb_articles_distincts
+        description: Nombre de libelles d'articles distincts.
+        data_tests:
+          - not_null
+
+      - name: nb_avis
+        description: Nombre de transactions accompagnees d'un avis.
+        data_tests:
+          - not_null
+
+      - name: note_moyenne
+        description: Note moyenne sur les transactions notees, de 1 a 5.
+        data_tests:
+          - not_null
+
+      - name: date_debut
+        description: Date de la premiere transaction du jeu de donnees.
+        data_tests:
+          - not_null
+
+      - name: date_fin
+        description: Date de la derniere transaction du jeu de donnees.
+        data_tests:
+          - not_null
+
+  - name: mart_segments
+    description: >
+      Performance par segment de valeur client. GRAIN : une ligne = un segment.
+      4 lignes. Construit depuis dim_clients, donc au grain client : sommer
+      ca_segment redonne le CA global.
+    columns:
+      - name: segment_valeur
+        description: Libelle du segment de valeur.
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["1. Occasionnel", "2. Regulier", "3. Fidele", "4. VIP"]
+
+      - name: nb_clients
+        description: Nombre de clients du segment.
+        data_tests:
+          - not_null
+
+      - name: ca_segment_usd
+        description: Chiffre d'affaires cumule du segment, en dollars.
+        data_tests:
+          - not_null
+
+      - name: ca_moyen_par_client
+        description: CA moyen d'un client du segment.
+        data_tests:
+          - not_null
+
+      - name: transactions_par_client
+        description: Nombre moyen de transactions d'un client du segment.
+        data_tests:
+          - not_null
+
+      - name: panier_moyen_usd
+        description: >
+          Moyenne des paniers moyens des clients du segment. Attention, ce
+          n'est pas le panier moyen du segment au grain transaction : c'est une
+          moyenne de moyennes, qui donne le meme poids a chaque client.
+        data_tests:
+          - not_null
+
+      - name: ca_client_min
+        description: CA du plus petit client du segment. Borne basse du quartile.
+        data_tests:
+          - not_null
+
+      - name: ca_client_max
+        description: CA du plus gros client du segment. Borne haute du quartile.
+        data_tests:
+          - not_null
+
+      - name: pct_clients
+        description: >
+          Part du segment dans l'effectif client total, en pourcentage.
+          La somme sur les 4 segments vaut 100 (test assert_parts_segments).
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+      - name: pct_ca
+        description: >
+          Part du segment dans le CA total, en pourcentage. La somme sur les 4
+          segments vaut 100 (test assert_parts_segments).
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+  - name: mart_produits
+    description: >
+      Performance par article. GRAIN : une ligne = un article. 50 lignes.
+      Construit depuis stg_transactions, donc au grain transaction.
+    columns:
+      - name: article
+        description: Libelle de l'article.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: nb_transactions
+        description: Nombre de transactions portant sur cet article.
+        data_tests:
+          - not_null
+
+      - name: nb_clients
+        description: Nombre de clients distincts ayant achete cet article.
+        data_tests:
+          - not_null
+
+      - name: ca_article_usd
+        description: Chiffre d'affaires genere par l'article, en dollars.
+        data_tests:
+          - not_null
+
+      - name: panier_moyen_usd
+        description: Montant moyen d'une transaction sur cet article.
+        data_tests:
+          - not_null
+
+      - name: panier_median_usd
+        description: Montant median d'une transaction sur cet article.
+        data_tests:
+          - not_null
+
+      - name: montant_min_usd
+        description: Plus petite transaction sur cet article.
+        data_tests:
+          - not_null
+
+      - name: montant_max_usd
+        description: Plus grosse transaction sur cet article.
+        data_tests:
+          - not_null
+
+      - name: nb_avis
+        description: Nombre d'avis deposes sur cet article.
+        data_tests:
+          - not_null
+
+      - name: note_moyenne_simple
+        description: >
+          Moyenne arithmetique des notes. Chaque avis pese pareil, quel que
+          soit le montant de la transaction.
+
+      - name: note_moyenne_ponderee
+        description: >
+          Moyenne des notes ponderee par le montant. Un avis sur une grosse
+          transaction pese davantage. NULL si l'article n'a aucun avis.
+
+      - name: pct_ca
+        description: Part de l'article dans le CA total, en pourcentage.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+      - name: rang_ca
+        description: Rang de l'article par CA decroissant, de 1 a 50.
+        data_tests:
+          - unique
+          - not_null
