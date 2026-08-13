@@ -1,7 +1,44 @@
-data/
-.env
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
+# Environnements virtuels
 venv/
+.venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+profiles.yml
+
+# dbt
+target/
+dbt_packages/
+logs/
+*.duckdb
+*.duckdb.wal
+
+# Power BI
+*.pbix.bak
+
+# Systeme
 .DS_Store
+Thumbs.db
+
+# Editeurs
+.vscode/
+.idea/
+*.swp
+
+# Node
+node_modules/

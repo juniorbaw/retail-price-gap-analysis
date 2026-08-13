@@ -1,0 +1,26 @@
+# Normalisation des fins de ligne : LF dans le depot, natif au checkout.
+* text=auto eol=lf
+
+# Donnees tabulaires : traitees comme du texte pour que les diffs restent lisibles.
+*.csv text eol=lf
+*.tsv text eol=lf
+
+# Code et configuration
+*.py    text eol=lf
+*.sql   text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+Makefile text eol=lf
+
+# Notebooks : JSON, mais on evite les conversions destructrices.
+*.ipynb text eol=lf
+
+# Binaires : jamais de conversion de fins de ligne.
+*.parquet binary
+*.png     binary
+*.jpg     binary
+*.pdf     binary
+*.pbix    binary
+*.duckdb  binary
