@@ -1,0 +1,80 @@
+name: CI
+
+# Le build tourne a chaque push et sur chaque pull request. Il echoue si un
+# seul test dbt casse : c'est ce qui garantit que les chiffres publies dans les
+# README restent exacts.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  # Permet de relancer le build a la main depuis l'onglet Actions.
+  workflow_dispatch:
+
+jobs:
+  dbt-build:
+    name: dbt build et tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: 02-fashion-retail-analytics/dbt
+
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Installer les dependances
+        run: pip install -r ../../requirements.txt
+
+      - name: Installer les packages dbt
+        run: dbt deps
+
+      - name: Verifier que la source brute n'a pas ete modifiee
+        # La source est la reference de tous les chiffres du projet. Si son
+        # empreinte change, les volumetries publiees ne veulent plus rien dire.
+        run: |
+          echo "68a05918d5982267fb5f7b250fb3f079  ../data/raw/Fashion_Retail_Sales.csv" \
+            | md5sum --check --strict
+
+      - name: dbt build
+        # Enchaine seed, modeles et tests. Un test qui echoue fait echouer
+        # l'etape, donc le job, donc le badge passe au rouge.
+        run: dbt build --profiles-dir .
+
+      - name: Generer le catalogue et le lineage
+        run: dbt docs generate --profiles-dir .
+
+      - name: Publier le catalogue en artefact
+        # Telechargeable depuis la page du run : utile pour consulter le
+        # lineage sans avoir a lancer dbt en local.
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogue-dbt
+          path: |
+            02-fashion-retail-analytics/dbt/target/index.html
+            02-fashion-retail-analytics/dbt/target/manifest.json
+            02-fashion-retail-analytics/dbt/target/catalog.json
+          retention-days: 30
+
+      - name: Resume du build
+        if: always()
+        run: |
+          {
+            echo "### Resultat du build dbt"
+            echo ""
+            echo "| Attendu | Valeur |"
+            echo "|---|---|"
+            echo "| Transactions | 2 750 |"
+            echo "| Clients | 166 |"
+            echo "| CA | 430 952 USD |"
+            echo ""
+            echo "Les volumetries sont verrouillees par le test assert_volumetrie."
+          } >> "$GITHUB_STEP_SUMMARY"
