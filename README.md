@@ -1,76 +1,121 @@
-# Analyse d'écarts de prix — Retail mode & luxe
+# Portfolio Data Analytics — Souleymane Ndiaye
 
-> Pipeline data complet : extraction API → nettoyage Python → analyse → dashboard.
-> Comment les marques de mode et de luxe se positionnent-elles en prix,
-> et comment utilisent-elles la remise selon leur segment ?
+[![CI](https://github.com/juniorbaw/retail-price-gap-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/juniorbaw/retail-price-gap-analysis/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-![Dashboard](./dashboard.png)
+**Data Analyst — Retail & Luxe.** SQL, dbt, Python, Power BI.
 
-🔗 **Dashboard interactif** : [voir sur Looker Studio](https://datastudio.google.com/s/kM3NfWMzsAg)
+Deux projets. Dans le premier, chaque chiffre publie est verrouille par un test
+automatise qui fait echouer le build s'il devient faux. Le second est un
+pipeline de collecte via API, dont les chiffres sont explicitement signales
+comme a revalider.
 
 ---
 
-## Le problème
+## [02 — Fashion Retail Analytics](02-fashion-retail-analytics/) · projet principal
 
-Sur le marché du retail mode/luxe, les prix pour un même type de produit
-varient énormément selon la marque. Cette analyse cartographie ces écarts
-et révèle comment la politique de remise diffère entre segments.
+**Un modele dimensionnel teste, construit avec dbt sur DuckDB.** Reproductible
+en deux commandes, sans compte cloud.
 
-## La démarche (pipeline de bout en bout)
+| | |
+|---|---|
+| Transactions | **2 750** |
+| Clients | **166** |
+| Chiffre d'affaires | **430 952 USD** |
+| Panier moyen / median | 156,71 / 110,00 USD |
+| Tests a chaque build | **125** |
 
-1. **Extraction** — API Channel3 (Python, `requests`) : 120 produits sur 6 catégories
-   (maroquinerie, chaussures, montres, manteaux, écharpes, lunettes)
-2. **Nettoyage & profiling** — `pandas` : gestion des valeurs manquantes,
-   doublons, harmonisation des devises (USD)
-3. **Segmentation** — par quantiles *intra-catégorie* (Accessible / Mid / Luxe) :
-   chaque produit est comparé aux autres de sa catégorie, pas au marché entier
-4. **Analyse** — remise moyenne pondérée (SUM des écarts / SUM des prix de référence),
-   médiane vs moyenne, écarts par segment
-5. **Restitution** — dashboard Looker Studio avec filtres interactifs
+**L'insight** : le segment VIP represente **24,7 % des clients et 50,8 % du
+chiffre d'affaires**. La moitie du CA tient a un quart des clients.
 
-## Les insights
+**Ce que le projet raconte vraiment** : la premiere version publiait un CA de
+7,6 M — **17,6 fois trop eleve**, soit exactement le nombre moyen de
+transactions par client. Un agregat au grain client avait ete recopie sur chaque
+ligne de transaction, puis somme. Le chiffre est parti sur un CV.
 
-1. **Écart de prix d'un facteur ~20** entre l'accessible et le luxe pour un même
-   type de produit : le marché n'est pas un continuum, il est nettement segmenté.
-2. **La remise est inversement liée au prix** : les marques premium protègent
-   leur prix (remise faible), les marques accessibles utilisent la remise comme
-   levier commercial. Le luxe ne se brade pas.
-3. **Distribution asymétrique** : prix moyen 2 869 $ mais médiane bien inférieure
-   — quelques pièces d'exception (montres) tirent la moyenne vers le haut.
-   La médiane reflète mieux le produit typique.
+Le test `assert_coherence_ca` mesure aujourd'hui le CA a deux grains differents
+et exige qu'ils coincident. Sur le pipeline fautif, il aurait renvoye un ecart
+de 7 154 629 USD et casse le build.
 
-## L'échantillon & les limites
+Cause racine, correction et test : [rapport de qualite des donnees](02-fashion-retail-analytics/docs/rapport_qualite_donnees.md).
 
-- 6 catégories × 20 produits via recherche par mots-clés (API Channel3)
-- Retailers principaux : Jomashop, Farfetch, TheRealReal
-- Prix en USD après nettoyage
-- **39 % des produits communiquent un prix de référence** — l'analyse des
-  remises porte sur ce sous-ensemble (limite documentée)
-- Snapshot ponctuel : pas de dimension temporelle (piste d'enrichissement)
+`dbt-core` · `dbt-duckdb` · `DuckDB` · `Parquet` · modele Power BI documente
 
-## Stack technique
+---
 
-`Python` · `pandas` · `requests` · `Channel3 API` · `Looker Studio`
+## [01 — Positionnement prix, mode et luxe](01-price-positioning-luxury/)
 
-## Structure du repo
+**Pipeline de collecte via API et segmentation de prix** sur six categories
+mode et luxe.
 
-```
-retail-price-gap-analysis/
-├── notebooks/       # exploration et pipeline (Jupyter)
-├── src/             # code d'extraction et transformation
-├── data/            # données (non versionnées)
-├── requirements.txt
-└── README.md
-```
+Segmentation par terciles calcules **a l'interieur de chaque categorie** :
+comparer une echarpe a une montre au prix absolu n'aurait pas de sens.
+
+**L'insight** : la remise est inversement liee au prix. Les marques premium
+protegent leur prix, les marques accessibles utilisent la remise comme levier
+commercial.
+
+> **Chiffres a revalider.** Le CSV collecte n'est pas versionne et l'API exige
+> une cle : les chiffres de ce projet n'ont pas pu etre recalcules, et deux
+> d'entre eux se contredisent. Le detail est documente dans le
+> [README du projet](01-price-positioning-luxury/#chiffres-a-verifier) plutot
+> que masque.
+
+`Python` · `pandas` · `API Channel3` · `Looker Studio`
+
+---
+
+## Stack
+
+**Transformation** dbt-core 1.12, dbt-duckdb, dbt_utils
+**Bases** DuckDB, SQL (variantes Snowflake documentees)
+**Langage** Python 3.11, pandas
+**BI** Power BI (modele en etoile + mesures DAX), Looker Studio
+**Qualite** 125 tests dbt, GitHub Actions
+**Formats** CSV, Parquet
+
+## Ce que ce depot cherche a montrer
+
+- **Un chiffre publie doit etre teste.** `assert_volumetrie` fige les 2 750 et
+  166 cites dans ce README : si la source change, le build echoue au lieu de
+  laisser la documentation devenir fausse en silence.
+- **Le grain avant tout.** Faits et agregats sont separes, et la table de faits
+  ne porte aucun agregat client — le fan-out devient structurellement
+  impossible.
+- **La reproductibilite se verifie.** DuckDB tourne en local : `make setup &&
+  make build`, et un lecteur obtient les memes chiffres.
+- **Les limites font partie du travail.** Chaque projet a une section Limites, et
+  les chiffres non reproductibles sont signales comme tels.
 
 ## Reproduire
 
 ```bash
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-# ajouter sa clé Channel3 dans un fichier .env : CHANNEL3_API_KEY=...
+git clone https://github.com/juniorbaw/retail-price-gap-analysis.git
+cd retail-price-gap-analysis
+make setup     # dependances Python + packages dbt
+make build     # 1 seed + 8 modeles + 125 tests
+make kpi       # affiche les chiffres de reference
 ```
 
----
+`make build` echoue si un seul test casse — c'est ce que verifie la CI a chaque
+push.
 
-*Analyse par Souleymane Ndiaye — Août 2026*
+Le projet 01 necessite une cle d'API : voir son
+[README](01-price-positioning-luxury/#reproduire-ce-projet).
+
+## Structure
+
+```
+.
+├── 01-price-positioning-luxury/    collecte API, nettoyage, segmentation
+├── 02-fashion-retail-analytics/    projet dbt, schema en etoile, tests
+├── .github/workflows/ci.yml        dbt build a chaque push
+├── Makefile                        setup, build, test, docs, export, clean
+└── requirements.txt                versions epinglees
+```
+
+## Contact
+
+- LinkedIn : https://linkedin.com/in/souleymane-nd
+- Email : soujunior94@gmail.com
+- GitHub : https://github.com/juniorbaw
