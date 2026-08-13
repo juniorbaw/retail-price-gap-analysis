@@ -143,9 +143,9 @@ Valeurs actuelles :
 | Segment | Clients | % clients | CA (USD) | % CA |
 |---|---|---|---|---|
 | 1. Occasionnel | 42 | 25,3 | 51 543 | 12,0 |
-| 2. Regulier | 42 | 25,3 | 72 389 | 16,8 |
-| 3. Fidele | 41 | 24,7 | 88 224 | 20,5 |
-| 4. VIP | 41 | 24,7 | 218 796 | 50,8 |
+| 2. Regulier | 41 | 24,7 | 70 477 | 16,4 |
+| 3. Fidele | 41 | 24,7 | 87 279 | 20,3 |
+| 4. VIP | 42 | 25,3 | 221 653 | 51,4 |
 
 ## mart_produits
 
@@ -225,10 +225,17 @@ tableur. Les marts de ce projet jouent ce role : les chiffres sortent de
 `mart_kpi_global`, pas d'un calcul refait dans le dashboard.
 
 **Segmentation par quartiles**
-Decoupage de la population en quatre groupes d'effectifs egaux, ordonnes par une
-mesure (ici le CA client). C'est une segmentation **relative** : le segment VIP
-contient un quart des clients par construction, quel que soit leur niveau de
-depense reel. Elle ne definit pas un seuil metier absolu.
+Decoupage de la population en quatre groupes, ordonnes par une mesure (ici le CA
+client). C'est une segmentation **relative** : le segment VIP contient environ un
+quart des clients par construction, quel que soit leur niveau de depense reel.
+Elle ne definit pas un seuil metier absolu.
+
+Deux decoupages coexistent et ne donnent pas le meme resultat. Le decoupage par
+**bornes de valeur** (`qcut`, retenu ici) coupe aux valeurs de quantile et
+accepte des groupes de tailles inegales : 42/41/41/42. Le decoupage par
+**effectifs egaux** (`ntile`) force des groupes de meme taille et deplace des
+clients de part et d'autre de la borne : 42/42/41/41. Sur ce jeu de donnees,
+l'ecart de CA VIP entre les deux methodes est de 2 857 USD.
 
 **Panier moyen / panier median**
 Le **panier moyen** est le CA divise par le nombre de transactions (156,71 USD).

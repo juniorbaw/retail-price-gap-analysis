@@ -139,9 +139,29 @@ Trois options :
 **Tant que ce depot reste public, le CV et les chiffres faux le sont aussi.**
 C'est le point le plus urgent de cette liste.
 
-## 7. Chiffres du projet 01 a revalider
+## 7. Rendre le projet 01 reproductible
 
-Rejouer la collecte avec une cle Channel3, puis confronter :
+Les chiffres du projet 01 sont desormais etablis et publies dans son README
+(119 produits, prix median 376 USD, remise ponderee 23,3 %, gradient
+42,3 / 36,5 / 19,9 %). Ce qui manque, c'est la **reproductibilite** :
+`produits_clean.csv` n'est pas versionne, donc un lecteur ne peut pas
+recalculer ces chiffres.
+
+**Action recommandee** : versionner `produits_clean.csv`. Il pese quelques
+dizaines de Ko, ne contient aucune donnee personnelle, et rend le projet
+verifiable sans cle d'API — au meme titre que le projet 02.
+
+```bash
+cd 01-price-positioning-luxury
+git add -f data/produits_clean.csv data/kpi_verifies.csv
+git commit -m "feat: version the cleaned price dataset for reproducibility"
+```
+
+Une fois le CSV versionne, l'etape suivante est d'y appliquer la meme discipline
+que sur le projet 02 : un test qui verrouille les 119 produits et le gradient de
+remise, pour qu'un changement de methode ne passe pas inapercu.
+
+Pour regenerer les fichiers depuis l'API :
 
 ```bash
 cd 01-price-positioning-luxury
@@ -153,13 +173,9 @@ python src/nettoyage.py --entree data/produits_bruts.csv \
 cat data/kpi_verifies.csv
 ```
 
-Le fichier produit `prix_moyen_usd` et `prix_median_usd` cote a cote : c'est ce
-qui tranche la contradiction sur les 2 869 USD (moyenne ou mediane selon les
-versions). Mettre ensuite a jour le tableau
-« Chiffres a verifier » du README du projet 01.
-
-Une fois `produits_clean.csv` obtenu, le versionner : il pese quelques dizaines
-de Ko et rend le projet reproductible en lecture, meme sans cle d'API.
+Le fichier produit `prix_moyen_usd` et `prix_median_usd` cote a cote et nommes
+sans ambiguite : c'est ce qui empeche la confusion corrigee (le « prix median
+2 869 » etait en realite une moyenne de moyennes) de se reproduire.
 
 ## 8. Dashboards
 
@@ -188,9 +204,18 @@ Etat des sources :
 | CV EN | Introuvable |
 | Lettre de motivation | Introuvable |
 
-Le CV FR contient par ailleurs les chiffres faux corriges ici : **2 800 clients**
-et **7,6 M€** doivent devenir **166 clients** et **430 952 USD** avant toute
-conversion en PDF.
+Le CV FR contient par ailleurs des chiffres faux corriges ici. A reprendre avant
+toute conversion en PDF :
+
+| Dans le CV | A remplacer par |
+|---|---|
+| 2 800 clients | **166 clients** |
+| CA 7,6 M€ | **430 952 USD** |
+| 8,9 % VIP = 54,1 % du CA | **25,3 % VIP = 51,4 % du CA** |
+| 120 produits | **119 produits** |
+| Prix median 2 869 USD | **prix median 376 USD**, prix moyen 2 724,5 USD |
+| Remise moyenne ponderee 25,26 % | **23,3 %** (ponderee) / 39,4 % (simple) |
+| Ecart de prix facteur ~20 | **facteur 13,6** |
 
 Pour generer les PDF en local, une fois les trois sources reunies :
 
@@ -215,6 +240,7 @@ Nommage demande :
 - `NDIAYE_Souleymane_CV_Data_Analyst_EN.pdf`
 - `NDIAYE_Souleymane_LM_Hermes_VIE.pdf`
 
-**Numero de telephone** : aucun numero n'a ete trouve dans les depots (scan de
-l'historique complet des deux depots). Il n'y a donc rien a retirer cote public.
-Il reste a l'ajouter manuellement sur les PDF envoyes en candidature.
+**Numero de telephone** : aucun numero n'est present dans les depots (scan de
+l'historique complet des deux depots), et il ne doit pas y entrer. Rien a
+retirer cote public. Il est a ajouter manuellement sur les PDF envoyes en
+candidature, jamais dans un fichier versionne.

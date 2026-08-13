@@ -1,88 +1,114 @@
-# Analyse de positionnement prix — Mode et luxe
+# Analyse d'ecarts de prix — Marche mode et luxe
 
-Pipeline de collecte via API, nettoyage et segmentation de prix sur un
-echantillon de produits mode et luxe.
-
-> **Chiffres non reproductibles en l'etat.** Le CSV collecte
-> (`data/produits_clean.csv`) n'est pas versionne, et l'API Channel3 exige une
-> cle. Les chiffres ci-dessous proviennent de la version precedente du projet et
-> **n'ont pas pu etre recalcules**. Deux d'entre eux se contredisent (voir
-> [Chiffres a verifier](#chiffres-a-verifier)). A traiter avant de mettre ce
-> projet en avant.
+Collecte via API, nettoyage et segmentation de prix sur un echantillon de
+produits mode et luxe. L'objet de l'analyse : mesurer l'ecart de prix entre
+segments pour un meme type de produit, et comparer leur politique de remise.
 
 ---
 
-## Objectif
+## Chiffres cles
 
-Sur le marche du retail mode et luxe, les prix d'un meme type de produit varient
-d'un facteur important selon la marque. Ce projet cartographie ces ecarts et
-compare la politique de remise entre segments de prix.
+Source : `produits_clean.csv`, collecte API Channel3, prix en USD.
 
-## Demarche
+| Indicateur | Valeur |
+|---|---|
+| Produits collectes | **119** |
+| Produits avec prix barre exploitable | **55** (46 %) |
+| Prix median | **376 USD** |
+| Prix moyen | **2 724,5 USD** |
+| Remise moyenne simple (n = 55) | **39,4 %** |
+| Remise moyenne ponderee | **23,3 %** |
+| Correlation de rang prix / taux de remise (Spearman) | **-0,58** |
 
-1. **Extraction** — API Channel3, 6 categories (maroquinerie, chaussures,
-   montres, manteaux, echarpes, lunettes) via `src/collecte.py`.
-2. **Nettoyage** — suppression des produits sans prix, deduplication par `id`,
-   restriction a l'USD pour comparer ce qui est comparable.
-3. **Segmentation** — terciles de prix calcules **a l'interieur de chaque
-   categorie**. Comparer une echarpe a une montre au prix absolu n'aurait aucun
-   sens : chaque produit est situe par rapport aux autres de sa categorie.
-4. **Analyse** — remise moyenne **ponderee**
-   (`SUM(ecarts) / SUM(prix de reference)`), et comparaison moyenne / mediane.
+Les deux remises sont affichees separement et labellisees : elles ne mesurent
+pas la meme chose (voir [Deux remises, deux questions](#deux-remises-deux-questions)).
 
-### Pourquoi une remise ponderee
+### Par segment de prix
 
-Une moyenne simple des pourcentages de remise donnerait le meme poids a une
-echarpe a 40 USD qu'a une montre a 20 000 USD. La ponderation par le prix de
-reference mesure la remise reellement consentie sur la valeur du catalogue.
+| Segment | Produits | Prix median | Remise ponderee |
+|---|---|---|---|
+| Accessible | 41 | 123 USD | **42,3 %** |
+| Mid | 37 | 275 USD | **36,5 %** |
+| Luxe | 41 | 1 667 USD | **19,9 %** |
+
+Ratio des medianes Luxe / Accessible : **13,6**.
+Ratio Watches / Shoes : **48,8**.
 
 ## Insights
 
-Ces trois observations sont qualitatives et restent valides independamment des
-chiffres exacts a revalider.
+**1. Le gradient de remise est monotone, et c'est la preuve la plus solide.**
+42,3 % sur l'accessible, 36,5 % sur le mid, 19,9 % sur le luxe. La remise
+decroit a chaque palier, sans exception. Le luxe ne se brade pas : il protege
+son prix. Le Spearman de **-0,58** confirme la relation au niveau produit, pas
+seulement au niveau segment.
 
-1. **Le marche n'est pas un continuum, il est segmente.** L'ecart de prix entre
-   le segment accessible et le segment luxe, pour un meme type de produit, se
-   compte en ordre de grandeur, pas en pourcentage.
-2. **La remise est inversement liee au prix.** Les marques premium protegent leur
-   prix ; les marques accessibles utilisent la remise comme levier commercial.
-3. **La distribution des prix est asymetrique.** La moyenne est tiree vers le
-   haut par quelques pieces d'exception (montres). La mediane decrit mieux le
-   produit typique.
+**2. L'ecart de prix est un facteur 13,6, pas un continuum.** Entre la mediane
+du segment accessible (123 USD) et celle du luxe (1 667 USD), pour des
+categories comparables. Le marche est nettement segmente. Entre categories,
+l'ecart est encore plus marque : facteur **48,8** entre les montres et les
+chaussures.
 
-## Chiffres a verifier
+**3. La moyenne est inexploitable sur cette distribution.** Prix median
+**376 USD** contre prix moyen **2 724,5 USD**, soit un rapport de 7,2. Quelques
+montres d'exception tirent la moyenne. Toute communication sur un « prix
+moyen » de ce marche est trompeuse.
 
-| Chiffre | Statut |
-|---|---|
-| 120 produits collectes | A recalculer |
-| Remise moyenne ponderee 25,26 % | A recalculer |
-| 39 % des produits avec prix de reference | A recalculer |
-| Ecart de prix facteur ~20 accessible / luxe | A recalculer |
-| **2 869 USD** | **Contradictoire** |
+## Deux remises, deux questions
 
-Le dernier point est bloquant. La version portfolio du projet presentait 2 869
-USD comme le **prix median**, tandis que la version de ce depot le presentait
-comme le **prix moyen**, en precisant que « la mediane est bien inferieure ».
-Les deux affirmations sont incompatibles. Sans le CSV source, il est impossible
-de trancher.
+Les deux chiffres sont publies parce qu'ils repondent a des questions
+differentes, et les confondre change la conclusion.
 
-`src/nettoyage.py` produit `data/kpi_verifies.csv`, qui contient les deux
-valeurs cote a cote (`prix_moyen_usd` et `prix_median_usd`) : rejouer la
-collecte tranche la question et fournit tous les chiffres du tableau.
+**Remise moyenne simple : 39,4 %.** Moyenne arithmetique des taux de remise.
+Chaque produit pese pareil. Repond a : *quelle remise porte un produit pris au
+hasard parmi ceux qui affichent un prix barre ?*
+
+**Remise moyenne ponderee : 23,3 %.**
+`SUM(prix_barre - prix) / SUM(prix_barre)`. Repond a : *quelle remise est
+reellement consentie sur la valeur du catalogue ?*
+
+L'ecart entre 39,4 % et 23,3 % n'est pas du bruit : il mesure le fait que les
+produits chers sont moins remises. Une echarpe a 40 USD remisee de 50 % et une
+montre a 20 000 USD remisee de 5 % donnent 27,5 % en moyenne simple, et 5,1 %
+en pondere. La seconde decrit la politique commerciale, la premiere decrit
+l'etalage.
 
 ## Limites
 
-- **Echantillon par mots-cles**, pas un recensement de marche : les resultats
-  dependent des requetes envoyees a l'API.
-- **Snapshot ponctuel**, sans dimension temporelle. Une remise observee un jour
-  donne ne dit rien de la politique de prix sur l'annee.
-- **Une minorite de produits communique un prix de reference.** L'analyse des
-  remises ne porte que sur ce sous-ensemble, qui n'est probablement pas
-  representatif : afficher un prix barre est deja une decision commerciale.
-- **Retailers concentres** (Jomashop, Farfetch, TheRealReal) : le prix observe
-  est celui du revendeur, pas celui de la marque.
-- **Segmentation relative** par terciles : elle ne definit pas un seuil absolu
-  de ce qu'est un produit « de luxe ».
+A lire en meme temps que les chiffres, pas apres.
+
+- **L'echantillon n'est pas representatif.** Collecte par recherche par
+  mots-cles, environ 20 resultats par requete : c'est un echantillon de moteur
+  de recherche, pas un catalogue ni un recensement de marche. Les chiffres
+  decrivent cet echantillon, pas le marche du luxe.
+- **46 % de couverture sur le prix de reference.** Seuls 55 des 119 produits
+  affichent un prix barre exploitable. Toute l'analyse de remise porte sur ce
+  sous-ensemble — et **afficher un prix barre est deja une decision
+  commerciale**, plus frequente chez les marques qui pratiquent la remise. La
+  remise mesuree est donc probablement superieure a la remise reelle.
+- **USD uniquement.** Les prix dans d'autres devises sont ecartes plutot que
+  convertis : la source ne fournit pas de taux de change date.
+- **Snapshot ponctuel.** Aucune dimension temporelle : impossible de distinguer
+  une remise permanente d'une promotion.
+- **Segmentation relative.** Les terciles sont calcules dans l'echantillon : un
+  produit « Luxe » l'est par rapport aux autres produits collectes, pas dans
+  l'absolu.
+- **Prix revendeur**, pas prix marque. Les retailers dominants de l'echantillon
+  fixent leurs propres prix.
+
+## Ce qui a ete corrige
+
+L'ancienne version du projet publiait un « prix median de 2 869 USD ». Ce
+chiffre etait faux sur deux plans :
+
+- **Mauvais label** : ce n'etait pas une mediane. La mediane reelle est
+  **376 USD**.
+- **Mauvaise methode** : 2 869 etait la moyenne des 6 prix moyens par requete —
+  une moyenne de moyennes sur des groupes d'effectifs differents, qui ne
+  correspond a aucune grandeur interpretable. La moyenne reelle est
+  **2 724,5 USD**.
+
+L'ecart de prix annonce a « un facteur ~20 » etait egalement surevalue : le
+ratio des medianes Luxe / Accessible est de **13,6**.
 
 ## Reproduire ce projet
 
@@ -104,17 +130,24 @@ python src/nettoyage.py --entree data/produits_bruts.csv \
 ```
 
 `src/nettoyage.py` est deterministe : a partir du meme CSV brut, il reproduit
-exactement les memes chiffres. Il affiche `kpi_verifies.csv` en fin
-d'execution.
+exactement les chiffres de ce README. Il ecrit `kpi_verifies.csv`, qui contient
+`prix_moyen_usd` et `prix_median_usd` **cote a cote et nommes sans ambiguite** —
+precisement pour que la confusion corrigee plus haut ne puisse pas se
+reproduire.
 
-Les notebooks reprennent la meme logique, pas a pas et commentee :
+Les notebooks reprennent la meme logique, pas a pas :
 
 ```bash
 jupyter lab notebooks/
 ```
 
-`01_collecte.ipynb` appelle l'API (ses sorties sont vides : il n'est pas
-rejouable sans cle). `02_analyse.ipynb` porte le nettoyage et l'analyse.
+`01_collecte.ipynb` appelle l'API (sorties vides : non rejouable sans cle).
+`02_analyse.ipynb` porte le nettoyage, la segmentation et les KPI.
+
+> **Note sur la reproductibilite.** `produits_clean.csv` n'est pas versionne :
+> il faut rejouer la collecte pour regenerer les chiffres. C'est la difference
+> majeure avec le projet 02, dont la source est versionnee et dont chaque
+> chiffre est verrouille par un test qui tourne en CI.
 
 ## Structure
 
@@ -137,9 +170,9 @@ rejouable sans cle). `02_analyse.ipynb` porte le nettoyage et l'analyse.
 
 ## Ecart avec le projet 02
 
-Ce projet n'a **ni tests automatises ni modele dbt**. C'est un pipeline de
-collecte, pas une transformation analytique — mais c'est aussi pour cela que ses
-chiffres n'ont pas pu etre revalides automatiquement. Le projet
+Ce projet n'a ni modele dbt ni tests automatises : c'est un pipeline de
+collecte, pas une transformation analytique. C'est aussi pourquoi une erreur de
+label a pu y survivre plusieurs semaines. Le projet
 [02-fashion-retail-analytics](../02-fashion-retail-analytics/) montre l'approche
-inverse : chaque chiffre publie y est couvert par un test qui echoue si le
-chiffre devient faux.
+inverse : chaque chiffre publie y est couvert par un test qui casse le build
+s'il devient faux.

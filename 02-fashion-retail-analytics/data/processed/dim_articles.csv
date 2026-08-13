@@ -15,9 +15,9 @@ article_key,article_nom,prix_median_usd,gamme_prix,date_premiere_vente,date_dern
 14,Handbag,94.0,1. Entree de gamme,2022-10-02,2023-09-28
 15,Hat,107.5,2. Milieu de gamme,2022-10-16,2023-09-30
 16,Hoodie,112.5,2. Milieu de gamme,2022-10-03,2023-09-24
-17,Jacket,119.0,3. Haut de gamme,2022-10-04,2023-09-23
+17,Jacket,119.0,2. Milieu de gamme,2022-10-04,2023-09-23
 18,Jeans,131.0,3. Haut de gamme,2022-10-28,2023-09-29
-19,Jumpsuit,119.0,2. Milieu de gamme,2022-10-07,2023-09-22
+19,Jumpsuit,119.0,3. Haut de gamme,2022-10-07,2023-09-22
 20,Kimono,100.0,1. Entree de gamme,2022-10-13,2023-10-01
 21,Leggings,96.0,1. Entree de gamme,2022-10-07,2023-09-30
 22,Loafers,127.0,3. Haut de gamme,2022-10-13,2023-09-30

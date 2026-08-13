@@ -68,11 +68,15 @@ montres.
 df.groupby("requete", group_keys=False).apply(_label_groupe)
 ```
 
-| Segment | Definition |
-|---|---|
-| `1. Accessible` | Prix inferieur ou egal au tercile bas (33 %) de sa categorie |
-| `2. Mid` | Entre les deux terciles |
-| `3. Luxe` | Prix superieur au tercile haut (66 %) de sa categorie |
+| Segment | Definition | Produits | Prix median | Remise ponderee |
+|---|---|---|---|---|
+| `1. Accessible` | Prix <= tercile bas (33 %) de sa categorie | 41 | 123 USD | 42,3 % |
+| `2. Mid` | Entre les deux terciles | 37 | 275 USD | 36,5 % |
+| `3. Luxe` | Prix > tercile haut (66 %) de sa categorie | 41 | 1 667 USD | 19,9 % |
+
+Le gradient de remise est **monotone** : il decroit a chaque palier, sans
+exception. C'est la preuve la plus solide du projet, parce qu'elle ne repose pas
+sur un seul chiffre mais sur un ordre.
 
 **Consequence a garder en tete.** La segmentation est **relative**. Chaque
 segment contient environ un tiers des produits de chaque categorie, par
@@ -97,8 +101,14 @@ produit tire au hasard ; la moyenne ponderee decrit la remise reellement
 consentie sur la valeur du catalogue. Pour une question de politique
 commerciale, c'est la seconde qui repond.
 
-**Le biais de selection, lui, ne se corrige pas.** Seule une minorite de
-produits communique un prix de reference. Ces produits ne sont pas un
+Sur cet echantillon, l'ecart entre les deux est large : **39,4 %** en moyenne
+simple contre **23,3 %** en pondere. Cet ecart n'est pas du bruit, c'est le
+resultat lui-meme : il mesure le fait que les produits chers sont nettement
+moins remises. Les deux chiffres sont donc publies cote a cote et labellises,
+jamais l'un a la place de l'autre.
+
+**Le biais de selection, lui, ne se corrige pas.** Seuls 55 des 119 produits
+(46 %) communiquent un prix de reference. Ces produits ne sont pas un
 echantillon aleatoire : **afficher un prix barre est deja une decision
 commerciale**, plus frequente chez les marques qui pratiquent la remise. La
 remise moyenne mesuree est donc probablement **superieure** a la remise reelle
@@ -115,9 +125,20 @@ toujours — la moyenne est tiree vers le haut par les valeurs extremes. La
 mediane decrit mieux le produit typique.
 
 **Citer l'une pour l'autre est une erreur de fond**, pas une imprecision de
-vocabulaire : les deux valeurs peuvent differer d'un facteur important. C'est
-precisement la confusion signalee dans le README de ce projet, et la raison pour
-laquelle le script exporte les deux, nommees sans ambiguite.
+vocabulaire. Ici, prix median **376 USD** contre prix moyen **2 724,5 USD** : un
+rapport de 7,2.
+
+C'est exactement l'erreur qui avait ete commise. La version precedente publiait
+un « prix median de 2 869 USD », qui n'etait ni une mediane ni le prix moyen :
+c'etait la **moyenne des six prix moyens par requete**. Une moyenne de moyennes
+sur des groupes d'effectifs differents ne correspond a aucune grandeur
+interpretable — elle donne le meme poids a une requete qui a remonte 15 produits
+et a une qui en a remonte 25.
+
+Double lecon : le **label** doit dire ce que le chiffre est, et la **methode**
+d'agregation doit etre choisie, pas subie. D'ou l'export des deux valeurs par
+`src/nettoyage.py`, nommees `prix_moyen_usd` et `prix_median_usd`, calculees
+directement sur les 119 produits.
 
 ## 6. Ce qui manquerait pour aller plus loin
 

@@ -18,6 +18,12 @@ Le projet existait avant sous forme de notebook pandas decrit comme
 facteur 17,6, publie sur un CV. C'est maintenant un vrai projet dbt, et le test
 qui aurait attrape l'erreur fait partie du build.
 
+> **Donnees synthetiques.** `Fashion_Retail_Sales.csv` est un jeu de donnees
+> synthetique, pas l'activite reelle d'une enseigne. Les chiffres ci-dessous
+> sont exacts par rapport a la source, et la source ne represente aucun
+> retailer existant. L'objet du projet est la methode, pas le diagnostic
+> commercial.
+
 ## Chiffres cles
 
 Tous produits par `mart_kpi_global`, tous couverts par un test.
@@ -30,25 +36,53 @@ Tous produits par `mart_kpi_global`, tous couverts par un test.
 | Panier moyen | 156,71 USD |
 | Panier median | 110,00 USD |
 | Articles | 50 |
+| Achats par client | min 6, max 28, moyenne 16,6 |
 | Periode | 2022-10-02 au 2023-10-01 |
+
+### Segments de valeur client
+
+Quartiles de CA client, decoupes sur les bornes de valeur. Verrouilles par
+`assert_segments_reference`.
+
+| Segment | Clients | % clients | CA USD | % CA | Panier moyen | Nb achats |
+|---|---|---|---|---|---|---|
+| 4. VIP | 42 | 25,3 % | 221 653 | **51,4 %** | **304,02** | **777** |
+| 3. Fidele | 41 | 24,7 % | 87 279 | 20,3 % | 110,68 | **794** |
+| 2. Regulier | 41 | 24,7 % | 70 477 | 16,4 % | 110,72 | 644 |
+| 1. Occasionnel | 42 | 25,3 % | 51 543 | 12,0 % | 98,57 | 535 |
 
 ## Insights
 
-**1. La moitie du CA tient a un quart des clients.** Le segment VIP represente
-24,7 % des clients (41 sur 166) et **50,8 %** du chiffre d'affaires. Le
-quartile le plus faible, a effectif quasi identique (42 clients), n'en pese que
-12,0 %. Un client VIP vaut en moyenne 4,3 fois un client occasionnel.
+**1. Les VIP achetent MOINS souvent que les Fideles — 777 achats contre 794.**
+Leur surperformance (51,4 % du CA pour 25,3 % des clients) vient entierement du
+**panier** : 304,02 USD contre 110,68, soit 2,7 fois plus. Pas de la frequence.
 
-**2. La moyenne ment sur le panier.** 156,71 USD de panier moyen contre 110,00
+La consequence operationnelle est directe : **le levier sur ce segment est la
+montee en gamme, pas la relance.** Une campagne visant a augmenter la frequence
+d'achat des VIP s'attaquerait a la variable sur laquelle ils sont deja en
+retrait. C'est le genre de conclusion qu'une lecture rapide inverse : on suppose
+qu'un bon client achete plus souvent ET depense plus, et ici c'est faux.
+
+**2. Le meilleur article en CA est le plus mal note.** Tunic est n°1 avec
+17 275 USD, et porte la plus mauvaise note du catalogue : **2,54 sur 5**. Cinq
+articles sont sous le seuil de 2,70 — Tunic 2,54, Flannel Shirt 2,59, Jacket
+2,64, Leggings 2,66, Sunglasses 2,67. Un volume de ventes eleve ne garantit rien
+sur la satisfaction, et ces cinq references meritent un examen avant que le
+volume ne se retourne.
+
+**3. La moyenne ment sur le panier.** 156,71 USD de panier moyen contre 110,00
 USD de median : la distribution est asymetrique, tiree par quelques grosses
 transactions (jusqu'a 4 932 USD). Piloter sur la moyenne surestime l'achat
 typique de 42 %.
 
-**3. Un chiffre faux survit tant que rien ne le contredit.** Le CA publie
+**4. Un chiffre faux survit tant que rien ne le contredit.** Le CA publie
 initialement, 7,6 M, etait 17,6 fois trop eleve — exactement le nombre moyen de
 transactions par client. Aucune verification ne croisait deux mesures de la meme
 grandeur. C'est ce qu'un test de coherence corrige, et c'est le vrai sujet de ce
 projet.
+
+**Note annexe** : Credit Card represente 53,5 % du CA avec un panier moyen de
+160,4 USD, contre 46,5 % et 152,7 USD pour Cash — un ecart de 5 % sur le panier.
 
 ## Methode
 
@@ -77,15 +111,15 @@ separation rend le fan-out structurellement impossible.
 
 ### Tests
 
-125 tests a chaque build.
+126 tests a chaque build.
 
 | Type | Contenu |
 |---|---|
 | Natifs | `unique`, `not_null`, `accepted_values`, `relationships` sur chaque colonne declaree |
 | Intervalles | `dbt_utils.accepted_range` sur les montants et les notes |
-| Singuliers | 6 tests metier dans `dbt/tests/` |
+| Singuliers | 7 tests metier dans `dbt/tests/` |
 
-Les six tests singuliers :
+Les sept tests singuliers :
 
 | Test | Garantie |
 |---|---|
@@ -95,6 +129,7 @@ Les six tests singuliers :
 | `assert_kpi_arithmetique` | `nb_transactions x panier_moyen = ca_total` |
 | `assert_parts_segments` | Les parts de segments totalisent 100 % |
 | `assert_volumetrie` | Les 2 750 et 166 publies restent exacts |
+| `assert_segments_reference` | La table des segments reste identique aux valeurs publiees |
 
 Le premier est celui qui aurait attrape le bug de grain : il aurait renvoye un
 ecart de 7 154 629 USD et fait echouer le build.
@@ -111,7 +146,12 @@ ecart de 7 154 629 USD et fait echouer le build.
   transaction valorisee.
 - **Aucune donnee de marge.** Un article a fort CA n'est pas forcement rentable.
 - **Segmentation relative**, par quartiles : elle ne definit pas un seuil metier
-  absolu de ce qu'est un « bon » client.
+  absolu de ce qu'est un « bon » client. Le decoupage se fait sur les bornes de
+  valeur (equivalent `qcut`), pas sur des effectifs egaux (`ntile`) : les deux
+  methodes donnent un CA VIP different (221 653 contre 218 796 USD), et le
+  choix est verrouille par un test.
+- **Donnees synthetiques** : aucune conclusion commerciale ne doit etre tiree
+  sur un marche reel.
 - **Ni geographie ni canal** dans la source.
 - **`note_moyenne` a 2,99 sur 5** : c'est une note basse, mais la source ne
   documente ni son echelle ni son mode de collecte. A ne pas interpreter comme
@@ -126,7 +166,7 @@ git clone https://github.com/juniorbaw/retail-price-gap-analysis.git
 cd retail-price-gap-analysis/02-fashion-retail-analytics
 
 make setup     # pip install -r ../requirements.txt && dbt deps
-make build     # 1 seed + 8 modeles + 125 tests
+make build     # 1 seed + 8 modeles + 126 tests
 ```
 
 `make build` echoue si un seul test casse.

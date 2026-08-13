@@ -1,6 +1,6 @@
 # Rapport de qualite des donnees — Fashion Retail Analytics
 
-Source : `data/raw/Fashion_Retail_Sales.csv`
+Source : `data/raw/Fashion_Retail_Sales.csv` — **donnees synthetiques**
 md5 : `68a05918d5982267fb5f7b250fb3f079` — 3 400 lignes, 6 colonnes, 133 Ko
 Periode couverte : 2 octobre 2022 au 1er octobre 2023
 
@@ -185,7 +185,7 @@ Applique au pipeline fautif, ce test aurait renvoye :
 
 Le build aurait echoue, et le chiffre n'aurait jamais atteint un CV.
 
-Cinq autres tests completent la protection :
+Six autres tests completent la protection :
 
 | Test | Ce qu'il garantit |
 |---|---|
@@ -194,6 +194,7 @@ Cinq autres tests completent la protection :
 | `assert_kpi_arithmetique` | `nb_transactions x panier_moyen = ca_total` |
 | `assert_parts_segments` | Les parts de segments totalisent 100 % |
 | `assert_volumetrie` | Les 2 750 et 166 publies restent exacts |
+| `assert_segments_reference` | La table des segments reste identique aux valeurs publiees |
 
 `assert_volumetrie` merite un mot : il fige dans le code les chiffres cites dans
 les README. Si la source change, le build echoue au lieu de rendre la
@@ -208,16 +209,25 @@ Le meme controle a ete applique aux autres affirmations du portfolio initial.
 
 ### « 2 800 clients »
 
-La source contient **166** identifiants client distincts. Aucun decoupage du
-fichier ne produit 2 800 : ni les lignes (3 400), ni les transactions valorisees
-(2 750), ni les articles (50). Le chiffre est sans origine identifiable.
+La source contient **166** identifiants client distincts.
+
+L'origine du 2 800 est connue : c'est le nombre de **transactions** (2 750),
+arrondi a 2,8 k, puis reetiquete « clients ». Deux erreurs se sont superposees —
+un arrondi, puis une confusion d'entite — et le resultat a survecu parce que
+personne ne l'a confronte au fichier. Le tableau publie affichait donc
+« 2 750 transactions » et « 2 800 clients » cote a cote : deux libelles pour la
+meme colonne.
+
+C'est aussi ce qui rendait le chiffre invisible a la relecture. 2 800 clients
+pour 2 750 transactions est impossible — il y aurait plus de clients que
+d'achats — mais l'incoherence ne saute aux yeux que si l'on rapproche
+explicitement les deux lignes.
 
 ### « 8,9 % des clients VIP generent 54,1 % du CA »
 
-La segmentation du projet utilise des **quartiles** (`pd.qcut(..., 4)` a
-l'origine, `ntile(4)` aujourd'hui). Par construction, un quartile contient un
-quart des clients : le segment VIP represente donc **24,7 %** des clients, pas
-8,9 %.
+La segmentation du projet utilise des **quartiles** de CA client. Par
+construction, un quartile contient environ un quart des clients : le segment VIP
+represente donc **25,3 %** des clients, pas 8,9 %.
 
 Concentration reellement observee :
 
@@ -226,15 +236,35 @@ Concentration reellement observee :
 | 6,0 % (10 clients) | 17,3 % |
 | **9,0 % (15 clients)** | **24,2 %** |
 | 15,1 % (25 clients) | 36,1 % |
-| **24,7 % (41 clients, le segment VIP)** | **50,8 %** |
+| **25,3 % (42 clients, le segment VIP)** | **51,4 %** |
 | 50,0 % (83 clients) | 71,7 % |
 
 A 9 % des clients, on est a 24,2 % du CA, pas a 54,1 %. Le couple (8,9 ; 54,1)
 ne correspond a aucun point de cette courbe.
 
-**Le chiffre correct, et il reste un bon argument :** *24,7 % des clients
-generent 50,8 % du chiffre d'affaires*. La moitie du CA tient a un quart des
+**Le chiffre correct, et il reste un bon argument :** *25,3 % des clients
+generent 51,4 % du chiffre d'affaires*. La moitie du CA tient a un quart des
 clients — c'est une concentration reelle, verifiable, et testee.
+
+### Une troisieme erreur, de methode celle-la
+
+La segmentation initiale utilisait `pd.qcut`, qui decoupe sur les **bornes de
+valeur** des quartiles. Une reecriture en SQL avec `ntile(4)` — qui decoupe en
+**effectifs egaux** — semble equivalente et ne l'est pas :
+
+| | Clients VIP | CA VIP | % CA VIP |
+|---|---|---|---|
+| `qcut` (bornes de valeur) | 42 | 221 653 | 51,4 % |
+| `ntile` (effectifs egaux) | 41 | 218 796 | 50,8 % |
+
+Le CA total reste 430 952 USD dans les deux cas. Les volumetries, la coherence
+du CA et la somme des parts a 100 % restent toutes vertes. **Aucun test existant
+ne voyait cette derive**, parce qu'aucun ne portait sur la methode de
+segmentation elle-meme.
+
+D'ou `assert_segments_reference`, qui fige les quatre lignes publiees — effectif,
+CA, part et panier moyen. C'est le seul garde-fou contre un changement de
+methode qui laisse tous les totaux justes.
 
 ---
 
@@ -250,8 +280,10 @@ clients — c'est une concentration reelle, verifiable, et testee.
 - **Aucune donnee de marge**, seulement du chiffre d'affaires. Un article a fort
   CA n'est pas necessairement un article rentable.
 - **La segmentation est relative**, pas metier. Les quartiles decoupent la
-  population en quatre parts egales ; ils ne disent pas ce qu'est un « bon »
-  client dans l'absolu.
+  population en quatre parts d'effectifs voisins ; ils ne disent pas ce qu'est un
+  « bon » client dans l'absolu.
+- **Les donnees sont synthetiques.** Aucun diagnostic commercial sur un marche
+  reel ne peut en etre tire. Ce qui se demontre ici, c'est la methode.
 - **Aucune dimension geographique ni de canal** dans la source.
 
 ---
@@ -261,7 +293,7 @@ clients — c'est une concentration reelle, verifiable, et testee.
 ```bash
 cd 02-fashion-retail-analytics
 make setup     # installe dbt-duckdb et les dependances
-make build     # dbt build : 1 seed + 8 modeles + 125 tests
+make build     # dbt build : 1 seed + 8 modeles + 126 tests
 ```
 
 `make build` echoue si un seul test casse. Les chiffres de ce rapport sortent

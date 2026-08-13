@@ -11,10 +11,10 @@ Date : 13 aout 2026
 ### [x] `dbt build` vert, 2 750 transactions et 166 clients confirmes
 
 ```
-Done. PASS=134 WARN=0 ERROR=0 SKIP=0 TOTAL=134
+Done. PASS=135 WARN=0 ERROR=0 SKIP=0 TOTAL=135
 ```
 
-134 noeuds : 1 seed, 8 modeles, 125 tests. Verifie apres un `make clean`
+135 noeuds : 1 seed, 8 modeles, 126 tests. Verifie apres un `make clean`
 complet, donc depuis un arbre vierge.
 
 | Attendu | Constate | Statut |
@@ -32,23 +32,61 @@ faits     (etoile)    : 430 952,00 USD
 
 Controle arithmetique : `2 750 x 156,709818 = 430 952,00`, ecart `0,00000000`.
 
-### [!] Aucun chiffre du repo en contradiction avec le BLOC 0
+### [x] Aucun chiffre du repo en contradiction avec le BLOC 0
 
-**Le BLOC 0 n'a jamais ete transmis.** Le controle a donc porte sur la source
-de donnees elle-meme, qui est la seule reference verifiable.
+Le BLOC 0 a ete recu apres la premiere livraison. **Reconciliation complete,
+chiffre par chiffre.**
 
-Trois chiffres publies sont contredits par la source et ont ete corriges :
+Projet A — tous conformes :
 
-| Publie | Reel | Nature de l'erreur |
+| BLOC 0 | Constate | |
 |---|---|---|
-| CA 7,6 M€ | **430 952 USD** | Fan-out : `430 952 x 16,57` transactions par client |
-| 2 800 clients | **166** | Sans origine identifiable dans le fichier |
-| 8,9 % VIP = 54,1 % CA | **24,7 % VIP = 50,8 % CA** | Une segmentation par quartiles donne ~25 % par construction |
+| 2 750 transactions | 2 750 | OK |
+| 166 clients | 166 | OK |
+| CA 430 952 USD | 430 952,00 | OK |
+| Panier moyen 156,71 | 156,71 | OK |
+| Panier median 110,00 | 110,00 | OK |
+| Achats/client 6 / 28 / 16,6 | 6 / 28 / 16,57 | OK |
+| 650 lignes sans montant (19,1 %) | 650 | OK |
+| 324 notes manquantes (9,5 %) | 324 | OK |
+| 50 articles, periode 2022-10-02 → 2023-10-01 | idem | OK |
+| Top articles : Tunic 17 275 ... Poncho 11 422 | les 8 identiques | OK |
+| Alertes note < 2,70 : Tunic 2,54 ... Sunglasses 2,67 | les 5 identiques | OK |
+| Credit Card 53,5 % / 160,4 — Cash 46,5 % / 152,7 | idem | OK |
 
-Le projet 01 n'a pas pu etre verifie : son CSV n'est pas versionne et l'API
-exige une cle. Ses chiffres sont signales comme non reproductibles, dont une
-contradiction directe entre deux versions sur les 2 869 USD (moyenne ou
-mediane). Voir la section 7 de `ACTIONS_MANUELLES.md`.
+**Une divergence trouvee, sur la table des segments.** Ma premiere version
+utilisait `ntile(4)` (effectifs egaux) la ou le BLOC 0 vient de `pd.qcut`
+(bornes de valeur). Le CA total etait identique a 430 952 USD dans les deux cas,
+et tous les tests existants restaient verts — mais la repartition differait :
+
+| | Clients VIP | CA VIP | % CA VIP |
+|---|---|---|---|
+| `ntile`, ma version | 41 | 218 796 | 50,8 % |
+| `qcut`, BLOC 0 | 42 | **221 653** | **51,4 %** |
+
+`dim_clients` a ete bascule sur le decoupage par bornes de valeur. Les quatre
+lignes correspondent maintenant exactement au BLOC 0, et un nouveau test,
+`assert_segments_reference`, les verrouille — effectif, CA, part et panier
+moyen. C'est le seul garde-fou contre un changement de methode qui laisse tous
+les totaux justes.
+
+Projet B — le BLOC 0 fournit les chiffres qui manquaient. Le README du projet 01
+a ete reecrit dessus : 119 produits, 55 avec prix barre (46 %), prix median
+376 USD, prix moyen 2 724,5 USD, remise simple 39,4 % et ponderee 23,3 %,
+Spearman -0,58, gradient de remise 42,3 / 36,5 / 19,9 %, ratio des medianes
+Luxe/Accessible 13,6.
+
+Corrections apportees par rapport a ce qui etait publie :
+
+| Publie | Reel |
+|---|---|
+| CA 7,6 M€ | **430 952 USD** (fan-out : x 16,57 achats/client) |
+| 2 800 clients | **166** — c'etait 2 750 transactions arrondi a 2,8 k |
+| 8,9 % VIP = 54,1 % CA | **25,3 % VIP = 51,4 % CA** |
+| 120 produits | **119** |
+| « prix median » 2 869 USD | **median 376**, moyenne 2 724,5 — faux label ET moyenne de moyennes |
+| Remise ponderee 25,26 % | **23,3 %** |
+| Ecart de prix facteur ~20 | **13,6** |
 
 ### [x] Aucun fichier > 1 Mo versionne inutilement, venv absent de l'historique
 
@@ -144,7 +182,8 @@ prioritaires :
 1. **Fusionner la branche dans `main`** — tout le travail y est.
 2. **Passer `data-portfolio` en prive ou le supprimer** — il expose encore
    publiquement le CV et les chiffres faux.
-3. **Revalider les chiffres du projet 01** en rejouant la collecte.
+3. **Versionner `produits_clean.csv`** pour rendre le projet 01 reproductible
+   en lecture, comme le projet 02.
 
 ---
 
@@ -163,6 +202,9 @@ prioritaires :
 | 8 — PDF de candidature | **Non realisable** dans ce conteneur |
 | 9 — Controle final | Ce document |
 
+Reconciliation avec le BLOC 0 effectuee apres coup : une divergence de methode
+trouvee et corrigee, les chiffres du projet 01 integres.
+
 ## Ce qui n'a pas ete fait, et pourquoi
 
 - **Les PDF** : sources absentes, outils absents, conteneur ephemere.
@@ -173,7 +215,7 @@ prioritaires :
 - **Les chiffres du projet 01** : non recalculables sans la source ni la cle
   d'API. Signales comme tels plutot que republies tels quels.
 
-## Deux defauts trouves en verifiant
+## Trois defauts trouves en verifiant
 
 Ces deux points ont ete trouves en executant les commandes documentees plutot
 qu'en les supposant correctes.
@@ -189,3 +231,9 @@ qu'en les supposant correctes.
    cassee par une precedence shell : `test ... || cd dbt && dbt deps` se lit
    `(test || cd dbt) && dbt deps`, ce qui lancait `dbt deps` dans le mauvais
    dossier. Corrige, et le cycle complet a ete rejoue depuis un arbre vierge.
+
+3. **Une reecriture fidele en apparence changeait les chiffres.** Traduire
+   `pd.qcut` par `ntile(4)` semble neutre : meme nombre de segments, meme CA
+   total, tous les tests verts. Le CA VIP passait pourtant de 221 653 a
+   218 796 USD. Une equivalence supposee entre deux fonctions n'en est pas une
+   tant qu'elle n'est pas verifiee sur les valeurs.

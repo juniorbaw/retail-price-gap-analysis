@@ -89,6 +89,23 @@ au vert sur DuckDB et echouerait sur Snowflake, alors que les deux modeles sont
 corrects. Le libelle doit etre normalise cote modele si les deux cibles doivent
 produire un resultat identique.
 
+## 5. Calcul de quantiles
+
+La segmentation client coupe sur les bornes de quartile de `ca_client`. Les deux
+moteurs exposent la meme fonction sous deux formes syntaxiques differentes.
+
+| | DuckDB | Snowflake |
+|---|---|---|
+| Forme | `quantile_cont(ca_client, 0.25)` | `PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY ca_client)` |
+
+Snowflake impose la forme `WITHIN GROUP` du standard SQL : la colonne triee ne
+passe pas en argument, elle passe dans la clause d'ordre. Un portage mecanique
+qui remplacerait seulement le nom de la fonction ne compile pas.
+
+Le choix de la fonction compte autant que sa syntaxe : `PERCENTILE_DISC`
+renverrait une valeur **effectivement presente** dans les donnees plutot qu'une
+interpolation, et deplacerait des clients d'un segment a l'autre.
+
 ### Bonus : `DATE_TRUNC('week', ...)` depend d'un parametre de session
 
 Sur Snowflake, le debut de semaine est gouverne par le parametre de session

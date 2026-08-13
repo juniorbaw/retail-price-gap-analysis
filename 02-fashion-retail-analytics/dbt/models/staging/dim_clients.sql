@@ -38,14 +38,36 @@ agrege as (
 
 segmente as (
 
+    -- Segmentation par quartiles de CA, decoupee sur les BORNES DE VALEUR
+    -- (equivalent de pandas qcut), et non sur des effectifs egaux (ntile).
+    --
+    -- La difference n'est pas cosmetique. ntile force des groupes de taille
+    -- quasi egale (42/42/41/41) en deplacant des clients de part et d'autre
+    -- d'une borne ; le decoupage par valeur respecte les seuils reels et donne
+    -- 42/41/41/42. Sur ce jeu de donnees, les deux methodes attribuent un CA
+    -- VIP different : 218 796 contre 221 653 USD. Les chiffres publies sont
+    -- ceux du decoupage par valeur.
+    --
+    -- Intervalles fermes a droite : ]borne precedente, borne].
+    -- Portabilite : quantile_cont est propre a DuckDB. Snowflake ecrit
+    -- PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY ca_client).
     select
-        *,
-        -- Segmentation par quartiles de CA. ntile decoupe la population en 4
-        -- groupes d'effectifs quasi egaux : c'est une segmentation RELATIVE,
-        -- pas un seuil metier absolu. Sur 166 clients : 42/42/41/41.
-        ntile(4) over (order by ca_client) as quartile_valeur
+        agrege.*,
+        case
+            when agrege.ca_client <= bornes.q25 then 1
+            when agrege.ca_client <= bornes.q50 then 2
+            when agrege.ca_client <= bornes.q75 then 3
+            else 4
+        end as quartile_valeur
 
     from agrege
+    cross join (
+        select
+            quantile_cont(ca_client, 0.25) as q25,
+            quantile_cont(ca_client, 0.50) as q50,
+            quantile_cont(ca_client, 0.75) as q75
+        from agrege
+    ) as bornes
 
 )
 

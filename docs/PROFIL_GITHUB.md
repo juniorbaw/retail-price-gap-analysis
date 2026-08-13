@@ -30,14 +30,25 @@ Je cherche une alternance ou un VIE en analytics engineering, secteur retail ou 
 
 ### [retail-price-gap-analysis](https://github.com/juniorbaw/retail-price-gap-analysis) — Portfolio data
 
-Deux projets. Le principal est un modele dimensionnel dbt sur DuckDB,
-reproductible en deux commandes :
+Deux projets.
+
+**Fashion Retail Analytics** — modele dimensionnel dbt sur DuckDB, reproductible
+en deux commandes, sans compte cloud.
 
 - 2 750 transactions, 166 clients, 430 952 USD de CA
-- 125 tests dbt a chaque build, dont 6 tests metier singuliers
+- 126 tests dbt a chaque build, dont 7 tests metier singuliers
 - Schema en etoile pret pour Power BI, variantes Snowflake documentees
+- Insight : les VIP achetent moins souvent que les Fideles (777 contre 794).
+  Leurs 51,4 % du CA viennent du panier, pas de la frequence.
 
-Le projet documente aussi une erreur de grain que j'ai commise : un agregat
+**Ecarts de prix, mode et luxe** — collecte API et segmentation de prix sur
+119 produits.
+
+- Gradient de remise monotone : 42,3 % sur l'accessible, 36,5 % sur le mid,
+  19,9 % sur le luxe. Spearman prix / remise : -0,58.
+- Facteur 13,6 entre les prix medians des segments accessible et luxe.
+
+Le portfolio documente aussi une erreur de grain que j'ai commise : un agregat
 client somme au grain transaction, qui multipliait le CA par 17,6. La cause
 racine, la correction et le test qui l'empeche de revenir sont ecrits noir sur
 blanc dans le [rapport de qualite des donnees](https://github.com/juniorbaw/retail-price-gap-analysis/blob/main/02-fashion-retail-analytics/docs/rapport_qualite_donnees.md).
@@ -63,15 +74,9 @@ blanc dans le [rapport de qualite des donnees](https://github.com/juniorbaw/reta
 
 ---
 
-## Pourquoi un seul projet en avant
+## Note
 
-Le brief prevoyait de lier deux projets. Le projet de positionnement prix a des
-chiffres qui n'ont pas pu etre revalides (CSV non versionne, API a cle), et deux
-de ses chiffres se contredisent entre versions.
-
-Le mettre en avant sur un profil de recrutement avant d'avoir tranche serait
-prendre le risque qu'un recruteur pose la question a laquelle on ne peut pas
-repondre. Il reste visible dans le portfolio, avec ses limites documentees.
-
-Une fois la collecte rejouee (`make` du projet 01) et les chiffres confirmes,
-ajouter une seconde entree sous « Projets ».
+Les chiffres cites viennent tous des valeurs verifiees et sont reproductibles
+depuis le depot pour le projet 02. Pour le projet 01, `produits_clean.csv` n'est
+pas encore versionne : le rendre reproductible en lecture est l'action 7 de
+`ACTIONS_MANUELLES.md`.

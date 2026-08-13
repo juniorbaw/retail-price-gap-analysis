@@ -151,7 +151,11 @@ models:
           note : il n'y a pas de moyenne a calculer sur un ensemble vide.
 
       - name: quartile_valeur
-        description: Quartile de CA du client, de 1 (plus faible) a 4 (plus eleve).
+        description: >
+          Quartile de CA du client, de 1 (plus faible) a 4 (plus eleve).
+          Decoupe sur les bornes de valeur (equivalent qcut), pas sur des
+          effectifs egaux (ntile) : les deux methodes ne donnent pas le meme
+          CA par segment.
         data_tests:
           - not_null
           - accepted_values:
@@ -164,6 +168,8 @@ models:
           Libelle du segment de valeur, derive du quartile. Segmentation
           RELATIVE par quartiles : chaque segment contient environ un quart des
           clients par construction, ce n'est pas un seuil metier absolu.
+          Repartition : 42 / 41 / 41 / 42. Verrouille par
+          assert_segments_reference.
         data_tests:
           - not_null
           - accepted_values:
