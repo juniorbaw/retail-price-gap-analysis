@@ -46,3 +46,6 @@ Thumbs.db
 
 # Node
 node_modules/
+
+# Identifiant anonyme genere par dbt, propre a chaque machine.
+.user.yml
