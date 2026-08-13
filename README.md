@@ -39,6 +39,8 @@ de 7 154 629 USD et casse le build.
 
 Cause racine, correction et test : [rapport de qualite des donnees](02-fashion-retail-analytics/docs/rapport_qualite_donnees.md).
 
+[Voir le projet](02-fashion-retail-analytics/) · [catalogue de donnees](02-fashion-retail-analytics/docs/data_catalog.md) · [modele Power BI](02-fashion-retail-analytics/dashboard/POWER_BI.md)
+
 `dbt-core` · `dbt-duckdb` · `DuckDB` · `Parquet` · modele Power BI documente
 
 ---

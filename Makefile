@@ -7,7 +7,7 @@
 PROJET_DBT := 02-fashion-retail-analytics
 
 .DEFAULT_GOAL := help
-.PHONY: help setup build test docs export kpi clean
+.PHONY: help setup deps build test docs export kpi clean
 
 help:  ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -15,6 +15,9 @@ help:  ## Affiche cette aide
 
 setup:  ## Installe les dependances Python et les packages dbt
 	$(MAKE) -C $(PROJET_DBT) setup
+
+deps:  ## Installe les packages dbt s'ils manquent
+	$(MAKE) -C $(PROJET_DBT) deps
 
 build:  ## Construit les modeles dbt et lance tous les tests
 	$(MAKE) -C $(PROJET_DBT) build

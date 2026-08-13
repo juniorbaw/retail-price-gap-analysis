@@ -67,6 +67,19 @@ git push
 Puis **Settings > Pages > Source: Deploy from a branch**, branche `main`,
 dossier `/docs-site`.
 
+**A savoir avant de committer** : ces artefacts sont volumineux —
+`index.html` fait **1,8 Mo** et `manifest.json` **1,1 Mo**. Les versionner
+introduit deux fichiers de plus de 1 Mo dans un depot qui n'en contient
+aujourd'hui aucun, et ils changent a chaque build.
+
+Deux facons d'eviter cela :
+
+- **Preferee** : publier via GitHub Actions plutot que par commit, avec
+  `actions/deploy-pages`. Le site est servi depuis un artefact, rien n'entre
+  dans l'historique git. La CI genere deja le catalogue a chaque run.
+- Sinon, accepter les 3 Mo dans l'historique, en sachant qu'ils grossiront a
+  chaque regeneration.
+
 Le lien sera `https://juniorbaw.github.io/retail-price-gap-analysis/`. Une fois
 la page en ligne, remplacer la mention « a activer » en haut du
 [README du projet 02](../02-fashion-retail-analytics/README.md) par le lien

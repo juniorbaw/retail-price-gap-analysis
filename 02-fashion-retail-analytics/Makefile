@@ -8,7 +8,7 @@ DBT_DIR := dbt
 DBT     := cd $(DBT_DIR) && dbt
 
 .DEFAULT_GOAL := help
-.PHONY: help setup build test docs export kpi clean
+.PHONY: help setup deps build test docs export kpi clean
 
 help:  ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -16,15 +16,21 @@ help:  ## Affiche cette aide
 
 setup:  ## Installe les dependances Python et les packages dbt
 	pip install -r ../requirements.txt
-	$(DBT) deps
+	$(MAKE) deps
 
-build:  ## Charge le seed, construit les modeles et lance tous les tests
+deps:  ## Installe les packages dbt s'ils manquent (idempotent)
+	# Les parentheses sont necessaires : sans elles, le shell lit
+	# (test || cd dbt) && dbt deps, et lance dbt deps dans le mauvais dossier
+	# quand le test reussit.
+	@test -d $(DBT_DIR)/dbt_packages/dbt_utils || ($(DBT) deps)
+
+build: deps  ## Charge le seed, construit les modeles et lance tous les tests
 	$(DBT) build --profiles-dir .
 
-test:  ## Lance uniquement les tests, sans reconstruire les modeles
+test: deps  ## Lance uniquement les tests, sans reconstruire les modeles
 	$(DBT) test --profiles-dir .
 
-docs:  ## Genere le catalogue statique dans dbt/target/
+docs: deps  ## Genere le catalogue statique dans dbt/target/
 	$(DBT) docs generate --profiles-dir .
 	@echo "Catalogue genere. Servir en local avec :"
 	@echo "  cd $(DBT_DIR) && dbt docs serve --profiles-dir ."
