@@ -1,0 +1,219 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    description: >
+      Table de faits du schema en etoile. GRAIN : une ligne = une transaction.
+      2 750 lignes. Ne porte que des cles et des mesures au grain transaction :
+      aucun agregat client, pour rendre le fan-out structurellement impossible.
+    columns:
+      - name: transaction_key
+        description: Cle primaire de la table de faits.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: client_key
+        description: Cle etrangere vers dim_clients.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+
+      - name: article_key
+        description: Cle etrangere vers dim_articles.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_articles')
+                field: article_key
+
+      - name: date_key
+        description: >
+          Cle etrangere vers dim_date, au format entier AAAAMMJJ.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: montant_usd
+        description: >
+          Mesure additive : se somme sur n'importe quelle combinaison de
+          dimensions sans precaution particuliere.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+
+      - name: note_avis
+        description: >
+          Mesure semi-additive : se moyenne, ne se somme pas. Additionner des
+          notes n'a aucun sens metier. NULL si aucun avis.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 5
+
+      - name: mode_paiement
+        description: >
+          Dimension degeneree : attribut de la transaction elle-meme, stocke
+          dans la table de faits plutot que dans une dimension a deux lignes.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Cash", "Credit Card"]
+
+      - name: date_achat
+        description: >
+          Date de la transaction, conservee en clair a cote de date_key pour
+          faciliter l'inspection sans jointure.
+        data_tests:
+          - not_null
+
+  - name: dim_articles
+    description: >
+      Dimension article. GRAIN : une ligne = un article. 50 lignes.
+      Ne contient que des attributs descriptifs, aucune mesure de performance :
+      le CA par article vit dans mart_produits.
+    columns:
+      - name: article_key
+        description: Cle primaire de substitution de la dimension.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: article_nom
+        description: Libelle de l'article.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: prix_median_usd
+        description: >
+          Prix median observe pour cet article. Attribut descriptif servant a
+          classer l'article en gamme, pas une mesure a agreger.
+        data_tests:
+          - not_null
+
+      - name: gamme_prix
+        description: Gamme de prix, terciles du prix median des 50 articles.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  ["1. Entree de gamme", "2. Milieu de gamme", "3. Haut de gamme"]
+
+      - name: date_premiere_vente
+        description: Date de la premiere vente observee pour cet article.
+        data_tests:
+          - not_null
+
+      - name: date_derniere_vente
+        description: Date de la derniere vente observee pour cet article.
+        data_tests:
+          - not_null
+
+  - name: dim_date
+    description: >
+      Dimension calendaire. GRAIN : une ligne = un jour. 365 lignes couvrant
+      2022-10-02 a 2023-10-01, sans trou : les jours sans vente existent, ce
+      qui evite les ruptures dans les series temporelles.
+    columns:
+      - name: date_key
+        description: Cle primaire au format entier AAAAMMJJ.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: date_jour
+        description: La date elle-meme.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: annee
+        description: Annee sur quatre chiffres.
+        data_tests:
+          - not_null
+
+      - name: trimestre
+        description: Numero de trimestre, de 1 a 4.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false
+
+      - name: mois
+        description: Numero de mois, de 1 a 12.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 12
+
+      - name: mois_nom
+        description: Nom du mois en anglais, tel que renvoye par le moteur.
+        data_tests:
+          - not_null
+
+      - name: jour
+        description: Numero du jour dans le mois, de 1 a 31.
+        data_tests:
+          - not_null
+
+      - name: semaine_iso
+        description: Numero de semaine ISO 8601.
+        data_tests:
+          - not_null
+
+      - name: jour_semaine_num
+        description: Jour de la semaine ISO, 1 pour lundi jusqu'a 7 pour dimanche.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7]
+                quote: false
+
+      - name: jour_semaine_nom
+        description: Nom du jour de la semaine en anglais.
+        data_tests:
+          - not_null
+
+      - name: est_weekend
+        description: Vrai pour samedi et dimanche.
+        data_tests:
+          - not_null
+
+      - name: annee_mois
+        description: Cle de tri mensuelle au format AAAA-MM.
+        data_tests:
+          - not_null
+
+      - name: annee_trimestre
+        description: Cle de tri trimestrielle au format AAAA-Tn.
+        data_tests:
+          - not_null
+
+      - name: debut_mois
+        description: Premier jour du mois. Utile pour les agregations mensuelles.
+        data_tests:
+          - not_null
+
+      - name: debut_semaine
+        description: Premier jour de la semaine (lundi en ISO).
+        data_tests:
+          - not_null

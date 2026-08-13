@@ -1,0 +1,2 @@
+nb_clients,nb_transactions,ca_total_usd,panier_moyen_usd,panier_median_usd,montant_min_usd,montant_max_usd,transactions_par_client,nb_articles_distincts,nb_avis,note_moyenne,date_debut,date_fin
+166,2750,430952.0,156.70981818181818,110.0,10.0,4932.0,16.566265060240966,50,2487,2.986248492159228,2022-10-02,2023-10-01

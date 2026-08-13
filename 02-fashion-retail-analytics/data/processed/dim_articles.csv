@@ -1,0 +1,51 @@
+article_key,article_nom,prix_median_usd,gamme_prix,date_premiere_vente,date_derniere_vente
+1,Backpack,120.0,3. Haut de gamme,2022-10-04,2023-09-11
+2,Belt,94.0,1. Entree de gamme,2022-10-02,2023-09-23
+3,Blazer,119.5,3. Haut de gamme,2022-10-03,2023-09-22
+4,Blouse,135.0,3. Haut de gamme,2022-10-02,2023-09-25
+5,Boots,92.0,1. Entree de gamme,2022-10-04,2023-09-28
+6,Bowtie,100.0,1. Entree de gamme,2022-10-03,2023-09-28
+7,Camisole,100.5,1. Entree de gamme,2022-10-05,2023-10-01
+8,Cardigan,112.0,2. Milieu de gamme,2022-10-15,2023-09-25
+9,Coat,117.5,2. Milieu de gamme,2022-10-07,2023-09-24
+10,Dress,96.5,1. Entree de gamme,2022-10-19,2023-09-30
+11,Flannel Shirt,107.0,2. Milieu de gamme,2022-10-07,2023-09-27
+12,Flip-Flops,127.0,3. Haut de gamme,2022-10-03,2023-09-26
+13,Gloves,116.0,2. Milieu de gamme,2022-10-04,2023-09-14
+14,Handbag,94.0,1. Entree de gamme,2022-10-02,2023-09-28
+15,Hat,107.5,2. Milieu de gamme,2022-10-16,2023-09-30
+16,Hoodie,112.5,2. Milieu de gamme,2022-10-03,2023-09-24
+17,Jacket,119.0,3. Haut de gamme,2022-10-04,2023-09-23
+18,Jeans,131.0,3. Haut de gamme,2022-10-28,2023-09-29
+19,Jumpsuit,119.0,2. Milieu de gamme,2022-10-07,2023-09-22
+20,Kimono,100.0,1. Entree de gamme,2022-10-13,2023-10-01
+21,Leggings,96.0,1. Entree de gamme,2022-10-07,2023-09-30
+22,Loafers,127.0,3. Haut de gamme,2022-10-13,2023-09-30
+23,Onesie,116.0,2. Milieu de gamme,2022-10-07,2023-09-23
+24,Overalls,104.5,1. Entree de gamme,2022-10-05,2023-09-21
+25,Pajamas,119.0,3. Haut de gamme,2022-10-04,2023-10-01
+26,Pants,71.0,1. Entree de gamme,2022-10-05,2023-09-28
+27,Polo Shirt,104.0,1. Entree de gamme,2022-10-02,2023-09-27
+28,Poncho,111.5,2. Milieu de gamme,2022-10-03,2023-09-29
+29,Raincoat,129.0,3. Haut de gamme,2022-10-02,2023-09-30
+30,Romper,107.0,2. Milieu de gamme,2022-10-06,2023-09-17
+31,Sandals,120.0,3. Haut de gamme,2022-10-08,2023-09-27
+32,Scarf,123.0,3. Haut de gamme,2022-10-15,2023-09-12
+33,Shorts,110.5,2. Milieu de gamme,2022-10-11,2023-09-30
+34,Skirt,116.0,2. Milieu de gamme,2022-10-03,2023-09-26
+35,Slippers,120.5,3. Haut de gamme,2022-10-04,2023-09-25
+36,Sneakers,121.0,3. Haut de gamme,2022-10-06,2023-09-30
+37,Socks,86.0,1. Entree de gamme,2022-10-03,2023-09-15
+38,Sun Hat,99.0,1. Entree de gamme,2022-10-04,2023-09-21
+39,Sunglasses,80.0,1. Entree de gamme,2022-10-03,2023-09-28
+40,Sweater,121.0,3. Haut de gamme,2022-10-25,2023-09-13
+41,Swimsuit,122.0,3. Haut de gamme,2022-10-17,2023-09-22
+42,T-shirt,107.0,2. Milieu de gamme,2022-10-03,2023-09-26
+43,Tank Top,88.5,1. Entree de gamme,2022-10-02,2023-08-25
+44,Tie,111.0,2. Milieu de gamme,2022-10-10,2023-09-25
+45,Trench Coat,90.5,1. Entree de gamme,2022-10-05,2023-09-29
+46,Trousers,104.0,1. Entree de gamme,2022-10-05,2023-09-30
+47,Tunic,124.0,3. Haut de gamme,2022-10-18,2023-09-07
+48,Umbrella,105.0,2. Milieu de gamme,2022-10-25,2023-09-15
+49,Vest,106.5,2. Milieu de gamme,2022-10-03,2023-10-01
+50,Wallet,107.0,2. Milieu de gamme,2022-10-09,2023-10-01
