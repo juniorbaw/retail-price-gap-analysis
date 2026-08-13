@@ -5,6 +5,11 @@
 *.csv text eol=lf
 *.tsv text eol=lf
 
+# Exception : les sources brutes ne sont JAMAIS normalisees. Elles doivent rester
+# identiques a l'octet pres au fichier d'origine (CRLF inclus), sinon leur
+# empreinte md5 change et la tracabilite est perdue.
+02-fashion-retail-analytics/data/raw/** -text
+
 # Code et configuration
 *.py    text eol=lf
 *.sql   text eol=lf
