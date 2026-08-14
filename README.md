@@ -1,5 +1,10 @@
 # Analyse d'écarts de prix — Retail mode & luxe
 
+> **Statut : refonte en cours.** Les indicateurs de la première version comportaient trois erreurs
+> de définition (une médiane calculée comme une moyenne de moyennes, deux mesures de remise
+> confondues, une volumétrie erronée). Les chiffres corrigés figurent ci-dessous ; le tableau de
+> bord est en cours de reconstruction.
+
 > Pipeline data complet : extraction API → nettoyage Python → analyse → dashboard.
 > Comment les marques de mode et de luxe se positionnent-elles en prix,
 > et comment utilisent-elles la remise selon leur segment ?
